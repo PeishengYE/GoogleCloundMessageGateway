@@ -41,7 +41,7 @@ public class RegistrationIntentService extends IntentService {
     @Override
     protected void onHandleIntent(Intent intent) {
         SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
-
+        String token ="";
         try {
             // [START register_for_gcm]
             // Initially this call goes out to the network to retrieve the token, subsequent calls
@@ -50,7 +50,7 @@ public class RegistrationIntentService extends IntentService {
             // See https://developers.google.com/cloud-messaging/android/start for details on this file.
             // [START get_token]
             InstanceID instanceID = InstanceID.getInstance(this);
-            String token = instanceID.getToken(getString(R.string.senderID),
+            token = instanceID.getToken(getString(R.string.senderID),
                     GoogleCloudMessaging.INSTANCE_ID_SCOPE, null);
             // [END get_token]
             Log.i(TAG, "GCM Registration Token: " + token);
@@ -73,8 +73,9 @@ public class RegistrationIntentService extends IntentService {
             sharedPreferences.edit().putBoolean(QuickstartPreferences.SENT_TOKEN_TO_SERVER, false).apply();
         }
         // Notify UI that registration has completed, so the progress indicator can be hidden.
-        Intent registrationComplete = new Intent(QuickstartPreferences.REGISTRATION_COMPLETE);
+        Intent registrationComplete = new Intent(QuickstartPreferences.BROADCAST_ACTION);
         LocalBroadcastManager.getInstance(this).sendBroadcast(registrationComplete);
+        sendMessage(token);
     }
 
     /**
@@ -87,6 +88,7 @@ public class RegistrationIntentService extends IntentService {
      */
     private void sendRegistrationToServer(String token) {
         // Add custom implementation, as needed.
+         Log.d(TAG, "sendRegistrationToServer()>> <" + token +">");
     }
 
     /**
@@ -103,5 +105,19 @@ public class RegistrationIntentService extends IntentService {
         }
     }
     // [END subscribe_topics]
+
+    private void sendMessage(String msg){
+
+        Intent localIntent = new Intent();
+
+        // The Intent contains the custom broadcast action for this app
+        localIntent.setAction(QuickstartPreferences.BROADCAST_ACTION);
+
+        // Puts log data into the Intent
+        localIntent.putExtra(QuickstartPreferences.MSG_UPDATE, msg);
+        localIntent.addCategory(Intent.CATEGORY_DEFAULT);
+
+        LocalBroadcastManager.getInstance(this).sendBroadcast(localIntent);
+    }
 
 }

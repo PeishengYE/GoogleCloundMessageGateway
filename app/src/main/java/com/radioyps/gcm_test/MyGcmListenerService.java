@@ -26,6 +26,7 @@ package com.radioyps.gcm_test;
         import android.net.Uri;
         import android.os.Bundle;
         import android.support.v4.app.NotificationCompat;
+        import android.support.v4.content.LocalBroadcastManager;
         import android.util.Log;
 
         import com.google.android.gms.gcm.GcmListenerService;
@@ -67,6 +68,7 @@ public class MyGcmListenerService extends GcmListenerService {
          * that a message was received.
          */
         sendNotification(message);
+        sendMessage(message);
         // [END_EXCLUDE]
     }
     // [END receive_message]
@@ -96,4 +98,18 @@ public class MyGcmListenerService extends GcmListenerService {
 
         notificationManager.notify(0 /* ID of notification */, notificationBuilder.build());
     }
+    private void sendMessage(String msg){
+
+        Intent localIntent = new Intent();
+
+        // The Intent contains the custom broadcast action for this app
+        localIntent.setAction(QuickstartPreferences.BROADCAST_ACTION);
+
+        // Puts log data into the Intent
+        localIntent.putExtra(QuickstartPreferences.MSG_UPDATE, msg);
+        localIntent.addCategory(Intent.CATEGORY_DEFAULT);
+
+        LocalBroadcastManager.getInstance(this).sendBroadcast(localIntent);
+    }
+
 }

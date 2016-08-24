@@ -38,9 +38,11 @@ public class MainActivity extends AppCompatActivity {
     private static final int PLAY_SERVICES_RESOLUTION_REQUEST = 9000;
     private static final String TAG = "MainActivity";
 
+
     private BroadcastReceiver mRegistrationBroadcastReceiver;
     private ProgressBar mRegistrationProgressBar;
     private TextView mInformationTextView;
+    private TextView messageRec;
     private boolean isReceiverRegistered;
 
     @Override
@@ -49,9 +51,13 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         mRegistrationProgressBar = (ProgressBar) findViewById(R.id.registrationProgressBar);
+        mInformationTextView = (TextView) findViewById(R.id.informationTextView);
+        messageRec = (TextView)findViewById(R.id.messageRecevied);
+
         mRegistrationBroadcastReceiver = new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
+                Log.i(TAG, "onReceiver()>> ....");
                 mRegistrationProgressBar.setVisibility(ProgressBar.GONE);
                 SharedPreferences sharedPreferences =
                         PreferenceManager.getDefaultSharedPreferences(context);
@@ -62,9 +68,17 @@ public class MainActivity extends AppCompatActivity {
                 } else {
                     mInformationTextView.setText(getString(R.string.token_error_message));
                 }
+                if(intent.hasExtra(QuickstartPreferences.MSG_UPDATE)){
+                    String msg = intent.getStringExtra(QuickstartPreferences.MSG_UPDATE);
+                    String orig = messageRec.getText().toString();
+                    msg = orig + "\n==============================\n"+ msg;
+                    messageRec.setText(msg);
+                }else{
+
+                }
+
             }
         };
-        mInformationTextView = (TextView) findViewById(R.id.informationTextView);
 
         // Registering BroadcastReceiver
         registerReceiver();
@@ -91,8 +105,10 @@ public class MainActivity extends AppCompatActivity {
 
     private void registerReceiver(){
         if(!isReceiverRegistered) {
+            IntentFilter msgIntentFilter =  new IntentFilter(QuickstartPreferences.BROADCAST_ACTION);
+            msgIntentFilter.addCategory(Intent.CATEGORY_DEFAULT);
             LocalBroadcastManager.getInstance(this).registerReceiver(mRegistrationBroadcastReceiver,
-                    new IntentFilter(QuickstartPreferences.REGISTRATION_COMPLETE));
+                    msgIntentFilter);
             isReceiverRegistered = true;
         }
     }
