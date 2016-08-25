@@ -69,6 +69,7 @@ public class MyGcmListenerService extends GcmListenerService {
          */
         sendNotification(message);
         sendMessage(message);
+        LogToFile.toFile(">>>>>>", message);
         // [END_EXCLUDE]
     }
     // [END receive_message]
