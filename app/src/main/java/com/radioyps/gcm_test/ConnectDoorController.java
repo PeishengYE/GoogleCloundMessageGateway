@@ -1,6 +1,17 @@
 package com.radioyps.gcm_test;
 
+import android.app.IntentService;
+import android.app.Notification;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
+import android.app.Service;
 import android.content.Context;
+import android.content.Intent;
+import android.media.RingtoneManager;
+import android.net.Uri;
+import android.os.IBinder;
+import android.support.annotation.Nullable;
+import android.support.v4.app.NotificationCompat;
 import android.util.Log;
 
 import java.io.ByteArrayOutputStream;
@@ -17,7 +28,8 @@ import java.net.UnknownHostException;
 /**
  * Created by yep on 10/10/16.
  */
-public class ConnectDoorController {
+public class ConnectDoorController extends Service {
+
 
     private final static String TAG = "ConnectDoorController";
     private final static int RESULT_SUCCESS = 0x11;
@@ -35,6 +47,71 @@ public class ConnectDoorController {
     private final static String EXCEPTION_HOST_REFUSED = "ECONNREFUSED";
     private static int response = RESULT_UNKNOWN;
     private static boolean isContinueConnect = true;
+    private final  int NOTIFICATION_ID = 10;
+    private Notification mNotification = null;
+
+
+    @Nullable
+    @Override
+    public IBinder onBind(Intent intent) {
+        return null;
+    }
+    @Override
+    public int onStartCommand(Intent intent, int flags, int startId) {
+
+
+        String action  = intent.getAction();
+        if (action.equals(CommonConstants.ACTION_PING)) {
+            Log.d(TAG, "onHandleIntent()>> Action_ping");
+            setUpAsForeground("Gcm_test");
+        }
+        return START_STICKY;
+    }
+
+
+
+
+    void setUpAsForeground(String text) {
+        /*
+        PendingIntent pi = PendingIntent.getActivity(getApplicationContext(), 0,
+                new Intent(getApplicationContext(), MainActivity.class),
+                PendingIntent.FLAG_UPDATE_CURRENT);
+        mNotification = new Notification();
+        mNotification.tickerText = text;
+        mNotification.icon = R.drawable.ic_notification;
+        mNotification.flags |= Notification.FLAG_ONGOING_EVENT;
+        mNotification.setLatestEventInfo(getApplicationContext(), "RandomMusicPlayer",
+                text, pi);
+                */
+        mNotification = makeNotification(text);
+        startForeground(NOTIFICATION_ID, mNotification);
+        Log.d(TAG, "onHandleIntent()>> setUpAsForeground()");
+    }
+
+
+    private Notification  makeNotification(String message) {
+        Intent intent = new Intent(this, MainActivity.class);
+        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+        PendingIntent pendingIntent = PendingIntent.getActivity(this, 0 /* Request code */, intent,
+                PendingIntent.FLAG_ONE_SHOT);
+
+        Uri defaultSoundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
+        NotificationCompat.Builder notificationBuilder = new NotificationCompat.Builder(this)
+                .setSmallIcon(R.mipmap.ic_launcher)
+                .setContentTitle(getString(R.string.notification_icon_name))
+                .setContentText(message)
+                .setAutoCancel(true)
+                .setSound(defaultSoundUri)
+                .setContentIntent(pendingIntent);
+
+
+        NotificationManager notificationManager =
+                (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+
+        notificationManager.notify(13 ,notificationBuilder.build());/* ID of notification */
+        return notificationBuilder.build();
+    }
+
 
     private static String getStatusString(int status, Context context) {
         String ret = context.getString(R.string.result_cmd_unknown);
@@ -110,6 +187,9 @@ public class ConnectDoorController {
         boolean ret = false;
         if(mesg.equals(CommonConstants.GCM_authrized_mesg)){
             ret = true;
+            Log.d(TAG, "isAuthorized()>> GCM message authorized" );
+        }else{
+            Log.d(TAG, "isAuthorized()>> GCM message NOT authorized" );
         }
         return ret;
     }
