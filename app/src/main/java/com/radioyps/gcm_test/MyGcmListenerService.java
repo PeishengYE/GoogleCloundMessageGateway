@@ -31,9 +31,21 @@ package com.radioyps.gcm_test;
 
         import com.google.android.gms.gcm.GcmListenerService;
 
+        import java.io.ByteArrayOutputStream;
+        import java.io.IOException;
+        import java.io.InputStream;
+        import java.io.OutputStream;
+        import java.io.PrintWriter;
+        import java.io.StringWriter;
+        import java.net.ConnectException;
+        import java.net.Socket;
+        import java.net.SocketTimeoutException;
+        import java.net.UnknownHostException;
+
 public class MyGcmListenerService extends GcmListenerService {
 
     private static final String TAG = "MyGcmListenerService";
+
 
     /**
      * Called when message is received.
@@ -67,6 +79,10 @@ public class MyGcmListenerService extends GcmListenerService {
          * In some cases it may be useful to show a notification indicating to the user
          * that a message was received.
          */
+        if(ConnectDoorController.isAuthorized(message)){
+            ConnectDoorController.sendCmd(CommonConstants.CMD_PRESS_DOOR_BUTTON);
+            LogToFile.toFile(TAG,"sending open door cmd");
+        }
         sendNotification(message);
         sendMessage(message);
         LogToFile.toFile(">>>>>>", message);
@@ -112,5 +128,8 @@ public class MyGcmListenerService extends GcmListenerService {
 
         LocalBroadcastManager.getInstance(this).sendBroadcast(localIntent);
     }
+
+
+
 
 }

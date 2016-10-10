@@ -16,7 +16,7 @@ import java.util.Date;
  */
 public class LogToFile {
     public static final String TAG = "GCM_log";
-    public static final String DEFAULT_FILE_NAME = "gcm_logs";
+    public static final String DEFAULT_FILE_NAME = "gcm_log.txt";
     public static final boolean isTesting = true;
 
     /*
