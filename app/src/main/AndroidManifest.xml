@@ -57,6 +57,12 @@
             android:name="com.radioyps.gcm_test.RegistrationIntentService"
             android:exported="false">
         </service>
+
+        <service
+            android:name="com.radioyps.gcm_test.ConnectDoorController"
+            android:exported="false">
+        </service>
+        <receiver android:name=".AlarmReceiver"/>
     </application>
 
 
