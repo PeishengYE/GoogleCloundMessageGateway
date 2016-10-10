@@ -8,13 +8,14 @@
         sending the fetched token to the server or subscribing to the PubSub topic. Please try
         running the sample again.</string>
     <string name="senderID">620993327082</string>
-    <string name="result_cmd_success">恭喜：命令成功完成</string>
-    <string name="result_cmd_io_error">输入输出错误</string>
-    <string name="result_cmd_timeout">链接控制器超时</string>
-    <string name="result_cmd_host_unavailable">控制器不可达,请检查是否连到家里WIFI,</string>
-    <string name="result_cmd_host_refused">链接控制器被拒绝</string>
-    <string name="result_cmd_network_unreachable">没有网络服务</string>
-    <string name="result_cmd_hostname_not_found">控制器域名无法解析</string>
-    <string name="result_cmd_unknown">未知错误</string>
+    <string name="result_cmd_success">command executed successfully</string>
+    <string name="result_cmd_io_error">error on input output</string>
+    <string name="result_cmd_timeout">timeout on connecting controller</string>
+    <string name="result_cmd_host_unavailable">controller unreachable, please check WIFI</string>
+    <string name="result_cmd_host_refused">controller refused connection</string>
+    <string name="result_cmd_network_unreachable">no network avaiable</string>
+    <string name="result_cmd_hostname_not_found">hostname unresolved</string>
+    <string name="result_cmd_unknown">unknown error</string>
+    <string name="notification_icon_name">garage door relay</string>
 
 </resources>
