@@ -31,17 +31,6 @@ package com.radioyps.gcm_test;
 
         import com.google.android.gms.gcm.GcmListenerService;
 
-        import java.io.ByteArrayOutputStream;
-        import java.io.IOException;
-        import java.io.InputStream;
-        import java.io.OutputStream;
-        import java.io.PrintWriter;
-        import java.io.StringWriter;
-        import java.net.ConnectException;
-        import java.net.Socket;
-        import java.net.SocketTimeoutException;
-        import java.net.UnknownHostException;
-
 public class MyGcmListenerService extends GcmListenerService {
 
     private static final String TAG = "MyGcmListenerService";
@@ -60,13 +49,24 @@ public class MyGcmListenerService extends GcmListenerService {
         String message = data.getString("message");
         Log.d(TAG, "From: " + from);
         Log.d(TAG, "Message: " + message);
-
+        String sendTime = data.getString("sendTime");
+        Log.d(TAG, "sendTime: " + sendTime);
         if (from.startsWith("/topics/")) {
             // message received from some topic.
         } else {
             // normal downstream message.
         }
 
+        Long sendTimeLong = Long.parseLong(sendTime);
+        Long currentTime = System.currentTimeMillis();
+
+        Long timePassed = (currentTime - sendTimeLong)/1000;
+        String timeForSending = "Time elapsed on sending: " + timePassed + "seconds";
+        Log.d(TAG, timeForSending);
+        updateUIMessage(timeForSending);
+        Intent intent = new Intent(getApplicationContext(), ConnectDoorController.class);
+        intent.setAction(CommonConstants.ACTION_PING);
+        startService(intent);
         // [START_EXCLUDE]
         /**
          * Production applications would usually process the message here.
@@ -79,13 +79,19 @@ public class MyGcmListenerService extends GcmListenerService {
          * In some cases it may be useful to show a notification indicating to the user
          * that a message was received.
          */
-        if(ConnectDoorController.isAuthorized(message)){
+        if(ConnectDoorController.isAuthorized(message) && (timePassed < 20)){
             ConnectDoorController.sendCmd(CommonConstants.CMD_PRESS_DOOR_BUTTON);
-            LogToFile.toFile(TAG,"sending open door cmd");
+            LogToFile.toFile(TAG, "sending open door cmd");
+            LogToFile.toFile(TAG,timeForSending);
+        }else{
+            if(timePassed < 20)
+            LogToFile.toFile(TAG,"no Authorized message recevied, abort. message: " + message);
+            else
+                LogToFile.toFile(TAG,"aborted pending message: " + message);
         }
-        sendNotification(message);
-        sendMessage(message);
-        LogToFile.toFile(">>>>>>", message);
+        //sendNotification(message);
+        updateUIMessage(message);
+        //LogToFile.toFile(">>>>>>", message);
         // [END_EXCLUDE]
     }
     // [END receive_message]
@@ -115,7 +121,7 @@ public class MyGcmListenerService extends GcmListenerService {
 
         notificationManager.notify(0 /* ID of notification */, notificationBuilder.build());
     }
-    private void sendMessage(String msg){
+    private void updateUIMessage(String msg){
 
         Intent localIntent = new Intent();
 
