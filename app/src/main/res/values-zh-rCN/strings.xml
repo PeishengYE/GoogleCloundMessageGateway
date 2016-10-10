@@ -1,0 +1,21 @@
+<resources>
+    <string name="app_name">gcm_test</string>
+    <string name="action_settings">Settings</string>
+        <string name="gcm_send_message">Token retrieved and sent to server! You can now use gcmsender to
+        send downstream messages to this app.</string>
+    <string name="registering_message">Generating InstanceID token...</string>
+    <string name="token_error_message">An error occurred while either fetching the InstanceID token,
+        sending the fetched token to the server or subscribing to the PubSub topic. Please try
+        running the sample again.</string>
+    <string name="senderID">620993327082</string>
+    <string name="result_cmd_success">恭喜：命令成功完成</string>
+    <string name="result_cmd_io_error">输入输出错误</string>
+    <string name="result_cmd_timeout">链接控制器超时</string>
+    <string name="result_cmd_host_unavailable">控制器不可达,请检查是否连到家里WIFI,</string>
+    <string name="result_cmd_host_refused">链接控制器被拒绝</string>
+    <string name="result_cmd_network_unreachable">没有网络服务</string>
+    <string name="result_cmd_hostname_not_found">控制器域名无法解析</string>
+    <string name="result_cmd_unknown">未知错误</string>
+    <string name="notification_icon_name">车库门控制器中继中</string>
+
+</resources>
