@@ -17,12 +17,15 @@ package com.radioyps.gcm_test;
 
 
 
+        import android.app.AlarmManager;
+        import android.app.PendingIntent;
         import android.content.BroadcastReceiver;
         import android.content.Context;
         import android.content.Intent;
         import android.content.IntentFilter;
         import android.content.SharedPreferences;
         import android.os.Bundle;
+        import android.os.SystemClock;
         import android.preference.PreferenceManager;
         import android.support.v4.content.LocalBroadcastManager;
         import android.support.v7.app.AppCompatActivity;
@@ -44,6 +47,9 @@ public class MainActivity extends AppCompatActivity {
     private TextView mInformationTextView;
     private TextView messageRec;
     private boolean isReceiverRegistered;
+    private static long TIME_INTERVAL = 15*1000;
+    private static long TIME_DELAY = 3*1000;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -88,6 +94,12 @@ public class MainActivity extends AppCompatActivity {
             Intent intent = new Intent(this, RegistrationIntentService.class);
             startService(intent);
         }
+        SetAlarm(this);
+        Log.i(TAG, "onCreate()>> ...start IntentService.");
+        Intent intent = new Intent(getApplicationContext(), ConnectDoorController.class);
+        intent.setAction(CommonConstants.ACTION_PING);
+        startService(intent);
+
     }
 
     @Override
@@ -131,6 +143,29 @@ public class MainActivity extends AppCompatActivity {
             return false;
         }
         return true;
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        CancelAlarm(this);
+    }
+
+    public void SetAlarm(Context context) {
+        //Toast.makeText(context, R.string.updating_in_progress, Toast.LENGTH_LONG).show(); // For example
+        Log.d(TAG, "Set alarm!");
+        AlarmManager am = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
+        Intent intnt = new Intent(context, AlarmReceiver.class);
+        PendingIntent pendngIntnt = PendingIntent.getBroadcast(context, 0, intnt, 0);
+        am.setRepeating(AlarmManager.ELAPSED_REALTIME_WAKEUP, SystemClock.elapsedRealtime() + TIME_DELAY, TIME_INTERVAL, pendngIntnt);
+    }
+
+    public void CancelAlarm(Context context) {
+        Log.d(TAG, "Cancle alarm!");
+        Intent intent = new Intent(context, AlarmReceiver.class);
+        PendingIntent sender = PendingIntent.getBroadcast(context, 0, intent, 0);
+        AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
+        alarmManager.cancel(sender);
     }
 
 }
