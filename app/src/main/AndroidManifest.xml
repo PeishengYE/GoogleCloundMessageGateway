@@ -23,6 +23,11 @@
             </intent-filter>
         </activity>
 
+        <activity
+            android:name="com.radioyps.gcm_test.QrActivity"
+            android:theme="@style/Theme.AppCompat.Light">
+
+        </activity>
         <!-- [START gcm_receiver] -->
         <receiver
             android:name="com.google.android.gms.gcm.GcmReceiver"

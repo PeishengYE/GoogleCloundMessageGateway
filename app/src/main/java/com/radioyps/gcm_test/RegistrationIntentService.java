@@ -17,8 +17,10 @@ package com.radioyps.gcm_test;
 
 
         import android.app.IntentService;
+        import android.content.Context;
         import android.content.Intent;
         import android.content.SharedPreferences;
+        import android.graphics.Bitmap;
         import android.preference.PreferenceManager;
         import android.support.v4.content.LocalBroadcastManager;
         import android.util.Log;
@@ -26,6 +28,11 @@ package com.radioyps.gcm_test;
         import com.google.android.gms.gcm.GcmPubSub;
         import com.google.android.gms.gcm.GoogleCloudMessaging;
         import com.google.android.gms.iid.InstanceID;
+        import com.google.zxing.BarcodeFormat;
+        import com.google.zxing.MultiFormatWriter;
+        import com.google.zxing.WriterException;
+        import com.google.zxing.common.BitMatrix;
+        import com.journeyapps.barcodescanner.BarcodeEncoder;
 
         import java.io.IOException;
 
@@ -57,7 +64,7 @@ public class RegistrationIntentService extends IntentService {
             LogToFile.toFile("TAG","GCM Registration Token: " + token);
 
             // TODO: Implement this method to send any registration to your app's servers.
-            sendRegistrationToServer(token);
+            displayTokernOnScreen(token);
 
             // Subscribe to topic channels
             subscribeTopics(token);
@@ -87,9 +94,24 @@ public class RegistrationIntentService extends IntentService {
      *
      * @param token The new token.
      */
-    private void sendRegistrationToServer(String token) {
+    private void displayTokernOnScreen(String token) {
         // Add custom implementation, as needed.
-         Log.d(TAG, "sendRegistrationToServer()>> <" + token +">");
+         Log.d(TAG, "displayTokernOnScreen()>> <" + token +">");
+        MultiFormatWriter multiFormatWriter = new MultiFormatWriter();
+        try {
+            BitMatrix bitMatrix = multiFormatWriter.encode(token, BarcodeFormat.QR_CODE,200,200);
+            BarcodeEncoder barcodeEncoder = new BarcodeEncoder();
+            Bitmap bitmap = barcodeEncoder.createBitmap(bitMatrix);
+            Context context = getBaseContext();
+            Intent intent = new Intent(context, QrActivity.class);
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            intent.putExtra("pic",bitmap);
+            context.startActivity(intent);
+        } catch (WriterException e) {
+            e.printStackTrace();
+        }
+
+
     }
 
     /**
