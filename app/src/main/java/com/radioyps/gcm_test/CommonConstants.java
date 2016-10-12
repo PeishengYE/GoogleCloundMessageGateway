@@ -20,6 +20,9 @@ public class CommonConstants {
     public static final String ACTION_STOP_CONNECTING = "com.radioyps.gcm_test.doorcontroller.ACTION_STOP_CONNECTING";
     public static final String ACTION_START_CONNECTING = "com.radioyps.gcm_test.doorcontroller.ACTION_START_CONNECTING";
 
+    public static final String PREF_IS_TOKEN_RECEVIED = "com.radioyps.gcm_test.doorcontroller.PREF_IS_TOKEN_RECEVIED";
+    public static final String PREF_SAVED_TOKEN = "com.radioyps.gcm_test.doorcontroller.PREF_SAVED_TOKEN";
+
 
 
 }

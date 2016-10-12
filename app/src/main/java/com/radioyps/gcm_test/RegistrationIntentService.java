@@ -65,7 +65,7 @@ public class RegistrationIntentService extends IntentService {
 
             // TODO: Implement this method to send any registration to your app's servers.
             displayTokernOnScreen(token);
-
+            saveToken(token);
             // Subscribe to topic channels
             subscribeTopics(token);
 
@@ -86,6 +86,13 @@ public class RegistrationIntentService extends IntentService {
         sendMessage(token);
     }
 
+
+    private  void saveToken(String token) {
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
+        //prefs.edit().putBoolean("filter", true).apply();
+        prefs.edit().putBoolean(CommonConstants.PREF_IS_TOKEN_RECEVIED, true).apply();
+        prefs.edit().putString(CommonConstants.PREF_SAVED_TOKEN, token).apply();
+    }
     /**
      * Persist registration to third-party servers.
      *
