@@ -22,6 +22,7 @@ package com.radioyps.gcm_test;
         import android.content.SharedPreferences;
         import android.graphics.Bitmap;
         import android.preference.PreferenceManager;
+        import android.support.v4.*;
         import android.support.v4.content.LocalBroadcastManager;
         import android.util.Log;
 
@@ -57,7 +58,7 @@ public class RegistrationIntentService extends IntentService {
             // See https://developers.google.com/cloud-messaging/android/start for details on this file.
             // [START get_token]
             InstanceID instanceID = InstanceID.getInstance(this);
-            token = instanceID.getToken(getString(R.string.senderID),
+            token = instanceID.getToken(BuildConfig.MySenderID,
                     GoogleCloudMessaging.INSTANCE_ID_SCOPE, null);
             // [END get_token]
             Log.i(TAG, "GCM Registration Token: " + token);
