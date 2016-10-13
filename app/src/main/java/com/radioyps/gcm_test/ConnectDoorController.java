@@ -185,7 +185,7 @@ public class ConnectDoorController extends Service {
 
     public   static boolean isAuthorized(String mesg){
         boolean ret = false;
-        if(mesg.equals(CommonConstants.GCM_authrized_mesg)){
+        if(mesg.equals(BuildConfig.MyDoorConfirmKey)){
             ret = true;
             Log.d(TAG, "isAuthorized()>> GCM message authorized" );
         }else{
