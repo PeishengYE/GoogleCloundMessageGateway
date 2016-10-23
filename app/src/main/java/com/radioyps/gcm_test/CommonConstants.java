@@ -26,5 +26,7 @@ public class CommonConstants {
     public static final String PREF_SAVED_TOKEN = "com.radioyps.gcm_test.doorcontroller.PREF_SAVED_TOKEN";
 
 
+    public static final String LOCAL_BROADCAST_ACTION = "broadcast_action";
+
 
 }

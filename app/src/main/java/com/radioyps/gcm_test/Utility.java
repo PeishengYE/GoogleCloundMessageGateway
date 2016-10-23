@@ -1,6 +1,8 @@
 package com.radioyps.gcm_test;
 
 import android.content.Context;
+import android.content.Intent;
+import android.graphics.Bitmap;
 import android.util.Log;
 
 import com.google.android.gms.common.ConnectionResult;
@@ -8,6 +10,11 @@ import com.google.android.gms.common.GoogleApiAvailability;
 import com.google.android.gms.gcm.GcmPubSub;
 import com.google.android.gms.gcm.GoogleCloudMessaging;
 import com.google.android.gms.iid.InstanceID;
+import com.google.zxing.BarcodeFormat;
+import com.google.zxing.MultiFormatWriter;
+import com.google.zxing.WriterException;
+import com.google.zxing.common.BitMatrix;
+import com.journeyapps.barcodescanner.BarcodeEncoder;
 
 import java.io.IOException;
 
@@ -49,14 +56,33 @@ public class Utility {
             // Subscribe to topic channels
 
 
-//        sharedPreferences.edit().putBoolean(QuickstartPreferences.SENT_TOKEN_TO_SERVER, true).apply();
 
         } catch (Exception e) {
             Log.d(TAG, "Failed to complete token refresh", e);
             // If an exception happens while fetching the new token or updating our registration data
             // on a third-party server, this ensures that we'll attempt the update at a later time.
-//        sharedPreferences.edit().putBoolean(QuickstartPreferences.SENT_TOKEN_TO_SERVER, false).apply();
+
         }
         return token;
+    }
+
+    public static  void displayTokernOnScreen(String token, Context context) {
+        // Add custom implementation, as needed.
+        Log.d(TAG, "displayTokernOnScreen()>> <" + token + ">");
+        MultiFormatWriter multiFormatWriter = new MultiFormatWriter();
+        try {
+            BitMatrix bitMatrix = multiFormatWriter.encode(token, BarcodeFormat.QR_CODE, 200, 200);
+            BarcodeEncoder barcodeEncoder = new BarcodeEncoder();
+            Bitmap bitmap = barcodeEncoder.createBitmap(bitMatrix);
+
+            Intent intent = new Intent(context, QrActivity.class);
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            intent.putExtra("pic", bitmap);
+            context.startActivity(intent);
+        } catch (WriterException e) {
+            e.printStackTrace();
+        }
+
+
     }
 }
