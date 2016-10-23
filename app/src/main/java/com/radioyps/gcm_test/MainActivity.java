@@ -46,17 +46,16 @@ package com.radioyps.gcm_test;
 
 public class MainActivity extends AppCompatActivity {
 
-    private static final int PLAY_SERVICES_RESOLUTION_REQUEST = 9000;
-    private static final String TAG = "MainActivity";
 
+    private static final String TAG = "MainActivity";
+    private static final int PLAY_SERVICES_RESOLUTION_REQUEST = 9000;
 
     private BroadcastReceiver mRegistrationBroadcastReceiver;
     private ProgressBar mRegistrationProgressBar;
     private TextView mInformationTextView;
     private TextView messageRec;
     private boolean isReceiverRegistered;
-    private static long TIME_INTERVAL = 15*1000;
-    private static long TIME_DELAY = 3*1000;
+
 
 
     @Override
@@ -104,7 +103,7 @@ public class MainActivity extends AppCompatActivity {
             Intent intent = new Intent(this, RegistrationIntentService.class);
             startService(intent);
         }
-        SetAlarm(this);
+
 
 
     }
@@ -165,25 +164,10 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        CancelAlarm(this);
+
     }
 
-    public void SetAlarm(Context context) {
-        //Toast.makeText(context, R.string.updating_in_progress, Toast.LENGTH_LONG).show(); // For example
-        Log.d(TAG, "Set alarm!");
-        AlarmManager am = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
-        Intent intnt = new Intent(context, AlarmReceiver.class);
-        PendingIntent pendngIntnt = PendingIntent.getBroadcast(context, 0, intnt, 0);
-        am.setRepeating(AlarmManager.ELAPSED_REALTIME_WAKEUP, SystemClock.elapsedRealtime() + TIME_DELAY, TIME_INTERVAL, pendngIntnt);
-    }
 
-    public void CancelAlarm(Context context) {
-        Log.d(TAG, "Cancle alarm!");
-        Intent intent = new Intent(context, AlarmReceiver.class);
-        PendingIntent sender = PendingIntent.getBroadcast(context, 0, intent, 0);
-        AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
-        alarmManager.cancel(sender);
-    }
 
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.

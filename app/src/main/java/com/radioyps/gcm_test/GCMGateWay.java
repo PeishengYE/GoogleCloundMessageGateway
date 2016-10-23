@@ -1,5 +1,6 @@
 package com.radioyps.gcm_test;
 
+import android.app.AlarmManager;
 import android.app.IntentService;
 import android.app.Notification;
 import android.app.NotificationManager;
@@ -7,16 +8,25 @@ import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.media.RingtoneManager;
 import android.net.Uri;
+import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.IBinder;
 import android.os.Looper;
 import android.os.Message;
+import android.os.SystemClock;
+import android.preference.PreferenceManager;
 import android.support.annotation.Nullable;
 import android.support.v4.app.NotificationCompat;
 import android.util.Log;
+
+import com.google.android.gms.common.ConnectionResult;
+import com.google.android.gms.common.GoogleApiAvailability;
+import com.google.android.gms.gcm.GoogleCloudMessaging;
+import com.google.android.gms.iid.InstanceID;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -62,8 +72,12 @@ public class GCMGateWay extends Service {
     private volatile Looper commandLooper;
     private boolean enabled = true;
 
-    private State state = State.none;
-    private enum State {none, waiting, enforcing, stats}
+    private State state = State.stop;
+    private enum State {stop, started, stats}
+    private Context mContext = null;
+
+    private static long TIME_INTERVAL = 15*1000;
+    private static long TIME_DELAY = 3*1000;
     @Nullable
     @Override
     public IBinder onBind(Intent intent) {
@@ -93,7 +107,12 @@ public class GCMGateWay extends Service {
     @Override
     public void onCreate() {
         super.onCreate();
-
+        mContext = getBaseContext();
+        if(!Utility.checkPlayServices(mContext)){
+            /* Fixme pupup a warning dialog */
+            Log.d(TAG, "onCreate()>> the device not support Google Play, Please install it");
+            return;
+        }
         HandlerThread commandThread = new HandlerThread(getString(R.string.app_name) + " command");
         commandThread.start();
         commandLooper = commandThread.getLooper();
@@ -105,6 +124,7 @@ public class GCMGateWay extends Service {
         Log.i(TAG, "Destroy");
 
         commandLooper.quit();
+        CancelAlarm(mContext);
         super.onDestroy();
     }
 
@@ -169,18 +189,100 @@ public class GCMGateWay extends Service {
         }
 
         private void start(){
-            Log.e(TAG, "CommandHandler()>> start()" );
+            Log.e(TAG, "CommandHandler()>> start()");
+
+            if(state == state.started){
+                Log.i(TAG, "CommandHandler()>> start() already started, give up");
+                return;
+            }
+            /* */
+            String token = Utility.startRegistration(getBaseContext());
+            if(token == null){
+                return;
+            }
+
+            try {
+                saveToken(token);
+                Utility.subscribeTopics(token, getBaseContext());
+            }catch (Exception e){
+                e.printStackTrace();
+                Log.i(TAG, "CommandHandler()>> start() failed on subscibe topic ");
+                return;
+            }
+            SetAlarm(getBaseContext());
             setUpAsForeground("GCMGateWay");
+            state = State.started;
         }
+
+
 
         private void mesgRecived(){
             Log.e(TAG, "CommandHandler()>> mesgRecived()" );
+            Bundle data = MyGcmListenerService.dataMessage;
+
+            String message = data.getString("message");
+            String sendTime = data.getString("sendTime");
+
+            Long sendTimeLong = Long.parseLong(sendTime);
+            Long currentTime = System.currentTimeMillis();
+
+            Long timePassed = (currentTime - sendTimeLong)/1000;
+            String timeForSending = "Time elapsed on sending: " + timePassed + "seconds";
+
+            if(GCMGateWay.isAuthorized(message) && (timePassed < 20)){
+                GCMGateWay.sendCmd(CommonConstants.CMD_PRESS_DOOR_BUTTON);
+                LogToFile.toFile(TAG, "sending open door cmd");
+                LogToFile.toFile(TAG,timeForSending);
+            }else{
+                if(timePassed < 20)
+                    LogToFile.toFile(TAG,"no Authorized message recevied, abort. message: " + message);
+                else
+                    LogToFile.toFile(TAG,"aborted pending message: " + message);
+            }
+
         }
 
         private void gcmTokenChanged(){
             Log.e(TAG, "CommandHandler()>> gcmTokenChanged()" );
+            sendNotification("Emergency: token changed");
+            /* FIXME need ask user to rescan the QR code on Screen  */
+            String token = Utility.startRegistration(getBaseContext());
+            if(token == null){
+                return;
+            }
 
+            try {
+                saveToken(token);
+                Utility.subscribeTopics(token, getBaseContext());
+            }catch (Exception e){
+                e.printStackTrace();
+                Log.i(TAG, "CommandHandler()>> start() failed on subscibe topic ");
+                return;
+            }
         }
+    }
+
+    private  void saveToken(String token) {
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
+        prefs.edit().putBoolean(CommonConstants.PREF_IS_TOKEN_RECEVIED, true).apply();
+        prefs.edit().putString(CommonConstants.PREF_SAVED_TOKEN, token).apply();
+    }
+
+    public void SetAlarm(Context context) {
+        //Toast.makeText(context, R.string.updating_in_progress, Toast.LENGTH_LONG).show(); // For example
+        Log.d(TAG, "Set alarm!");
+        AlarmManager am = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
+        Intent intnt = new Intent(context, AlarmReceiver.class);
+        PendingIntent pendngIntnt = PendingIntent.getBroadcast(context, 0, intnt, 0);
+        am.setRepeating(AlarmManager.ELAPSED_REALTIME_WAKEUP, SystemClock.elapsedRealtime() + TIME_DELAY, TIME_INTERVAL, pendngIntnt);
+    }
+
+    public void CancelAlarm(Context context) {
+        Log.d(TAG, "Cancle alarm!");
+        Intent intent = new Intent(context, AlarmReceiver.class);
+        PendingIntent sender = PendingIntent.getBroadcast(context, 0, intent, 0);
+        AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
+        alarmManager.cancel(sender);
     }
 
     public static void start(String reason, Context context) {
@@ -212,6 +314,27 @@ public class GCMGateWay extends Service {
         startForeground(NOTIFICATION_ID, mNotification);
         Log.d(TAG, "onHandleIntent()>> setUpAsForeground()");
     }
+    /* FIXME duplicated code */
+    private void sendNotification(String message) {
+        Intent intent = new Intent(this, MainActivity.class);
+        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+        PendingIntent pendingIntent = PendingIntent.getActivity(this, 0 /* Request code */, intent,
+                PendingIntent.FLAG_ONE_SHOT);
+
+        Uri defaultSoundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
+        NotificationCompat.Builder notificationBuilder = new NotificationCompat.Builder(this)
+                .setSmallIcon(R.drawable.ic_notification)
+                .setContentTitle("GCM Changed")
+                .setContentText(message)
+                .setAutoCancel(true)
+                .setSound(defaultSoundUri)
+                .setContentIntent(pendingIntent);
+
+        NotificationManager notificationManager =
+                (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+
+        notificationManager.notify(0 /* ID of notification */, notificationBuilder.build());
+    }
 
 
     private Notification  makeNotification(String message) {
@@ -233,7 +356,7 @@ public class GCMGateWay extends Service {
         NotificationManager notificationManager =
                 (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
 
-        notificationManager.notify(13 ,notificationBuilder.build());/* ID of notification */
+        notificationManager.notify(13, notificationBuilder.build());/* ID of notification */
         return notificationBuilder.build();
     }
 
@@ -399,4 +522,6 @@ public class GCMGateWay extends Service {
         return ret;
 
     }
+
+
 }
