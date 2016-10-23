@@ -172,7 +172,7 @@ public class MainActivity extends AppCompatActivity {
         if (id == R.id.action_settings) {
 
             Log.d(TAG, "setting pressed ");
-            startActivity(new Intent(this, SettingActivity.class));
+            startActivity(new Intent(this, SettingsActivity.class));
             return true;
         }
 

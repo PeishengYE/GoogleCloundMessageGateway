@@ -12,7 +12,7 @@ import android.preference.PreferenceManager;
 /**
  * Created by yep on 23/10/16.
  */
-public class SettingActivity {
+
 
     /**
      * Created by developer on 14/10/16.
@@ -76,4 +76,3 @@ public class SettingActivity {
             return super.getParentActivityIntent().addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
         }
     }
-}
