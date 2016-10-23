@@ -9,7 +9,11 @@ import android.content.Context;
 import android.content.Intent;
 import android.media.RingtoneManager;
 import android.net.Uri;
+import android.os.Handler;
+import android.os.HandlerThread;
 import android.os.IBinder;
+import android.os.Looper;
+import android.os.Message;
 import android.support.annotation.Nullable;
 import android.support.v4.app.NotificationCompat;
 import android.util.Log;
@@ -28,10 +32,10 @@ import java.net.UnknownHostException;
 /**
  * Created by yep on 10/10/16.
  */
-public class ConnectDoorController extends Service {
+public class GCMGateWay extends Service {
 
 
-    private final static String TAG = "ConnectDoorController";
+    private final static String TAG = "GCMGateWay";
     private final static int RESULT_SUCCESS = 0x11;
     private final static int RESULT_IO_ERROR = 0x12;
     private final static int RESULT_TIMEOUT = 0x13;
@@ -50,7 +54,16 @@ public class ConnectDoorController extends Service {
     private final  int NOTIFICATION_ID = 10;
     private Notification mNotification = null;
 
+    private volatile CommandHandler commandHandler;
+    public static final String EXTRA_COMMAND = "Command";
+    private static final String EXTRA_REASON = "Reason";
+    public enum Command {start, mesgArrived, tokenChanged, stop}
+    private static final int MSG_SERVICE_INTENT = 0;
+    private volatile Looper commandLooper;
+    private boolean enabled = true;
 
+    private State state = State.none;
+    private enum State {none, waiting, enforcing, stats}
     @Nullable
     @Override
     public IBinder onBind(Intent intent) {
@@ -60,29 +73,141 @@ public class ConnectDoorController extends Service {
     public int onStartCommand(Intent intent, int flags, int startId) {
 
 
-        String action  = intent.getAction();
-        if (action.equals(CommonConstants.ACTION_PING)) {
-            Log.d(TAG, "onHandleIntent()>> Action_ping");
-            setUpAsForeground("Gcm_test");
+
+
+        if (intent == null) {
+            Log.i(TAG, "Restart");
+
+            // Recreate intent
+            intent = new Intent(this, GCMGateWay.class);
+            intent.putExtra(EXTRA_COMMAND, enabled ? Command.start : Command.stop);
         }
+
+
+        commandHandler.queue(intent);
         return START_STICKY;
+
+
+    }
+
+    @Override
+    public void onCreate() {
+        super.onCreate();
+
+        HandlerThread commandThread = new HandlerThread(getString(R.string.app_name) + " command");
+        commandThread.start();
+        commandLooper = commandThread.getLooper();
+        commandHandler = new CommandHandler(commandLooper);
+    }
+
+    @Override
+    public void onDestroy() {
+        Log.i(TAG, "Destroy");
+
+        commandLooper.quit();
+        super.onDestroy();
+    }
+
+    private final class CommandHandler extends Handler {
+        public int queue = 0;
+
+        public CommandHandler(Looper looper) {
+            super(looper);
+        }
+
+        public void queue(Intent intent) {
+            synchronized (this) {
+                queue++;
+            }
+            Message msg = commandHandler.obtainMessage();
+            msg.obj = intent;
+            msg.what = MSG_SERVICE_INTENT;
+            commandHandler.sendMessage(msg);
+        }
+
+        public void handleMessage(Message msg) {
+            try {
+                switch (msg.what) {
+                    case MSG_SERVICE_INTENT:
+                        handleIntent((Intent) msg.obj);
+                        break;
+                    default:
+                        Log.e(TAG, "Unknown command message=" + msg.what);
+                }
+            } catch (Throwable ex) {
+                Log.e(TAG, ex.toString() + "\n" + Log.getStackTraceString(ex));
+            } finally {
+
+            }
+        }
+
+
+        private void handleIntent(Intent intent) {
+
+
+            Command cmd = (Command) intent.getSerializableExtra(EXTRA_COMMAND);
+            String reason = intent.getStringExtra(EXTRA_REASON);
+            try {
+                switch (cmd) {
+                    case start:
+                         start();
+                        break;
+
+                    case mesgArrived:
+                        mesgRecived();
+                        break;
+
+                    case tokenChanged:
+                        gcmTokenChanged();
+                        break;
+                    default:
+                        Log.e(TAG, "Unknown command=" + cmd);
+                }
+            }catch (Throwable ex){
+                Log.e(TAG, "handleIntent()>> exception" + cmd);
+            }
+        }
+
+        private void start(){
+            Log.e(TAG, "CommandHandler()>> start()" );
+            setUpAsForeground("GCMGateWay");
+        }
+
+        private void mesgRecived(){
+            Log.e(TAG, "CommandHandler()>> mesgRecived()" );
+        }
+
+        private void gcmTokenChanged(){
+            Log.e(TAG, "CommandHandler()>> gcmTokenChanged()" );
+
+        }
+    }
+
+    public static void start(String reason, Context context) {
+        Intent intent = new Intent(context, GCMGateWay.class);
+        intent.putExtra(EXTRA_COMMAND, Command.start);
+        intent.putExtra(EXTRA_REASON, reason);
+        context.startService(intent);
     }
 
 
 
+    public static void onReceiveGCm(String reason, Context context) {
+        Intent intent = new Intent(context, GCMGateWay.class);
+        intent.putExtra(EXTRA_COMMAND, Command.mesgArrived);
+        intent.putExtra(EXTRA_REASON, reason);
+        context.startService(intent);
+    }
+
+    public static void onGoolgeTokenChanged(String reason, Context context) {
+        Intent intent = new Intent(context, GCMGateWay.class);
+        intent.putExtra(EXTRA_COMMAND, Command.tokenChanged);
+        intent.putExtra(EXTRA_REASON, reason);
+        context.startService(intent);
+    }
 
     void setUpAsForeground(String text) {
-        /*
-        PendingIntent pi = PendingIntent.getActivity(getApplicationContext(), 0,
-                new Intent(getApplicationContext(), MainActivity.class),
-                PendingIntent.FLAG_UPDATE_CURRENT);
-        mNotification = new Notification();
-        mNotification.tickerText = text;
-        mNotification.icon = R.drawable.ic_notification;
-        mNotification.flags |= Notification.FLAG_ONGOING_EVENT;
-        mNotification.setLatestEventInfo(getApplicationContext(), "RandomMusicPlayer",
-                text, pi);
-                */
+
         mNotification = makeNotification(text);
         startForeground(NOTIFICATION_ID, mNotification);
         Log.d(TAG, "onHandleIntent()>> setUpAsForeground()");

@@ -64,7 +64,7 @@ public class MyGcmListenerService extends GcmListenerService {
         String timeForSending = "Time elapsed on sending: " + timePassed + "seconds";
         Log.d(TAG, timeForSending);
         updateUIMessage(timeForSending);
-        Intent intent = new Intent(getApplicationContext(), ConnectDoorController.class);
+        Intent intent = new Intent(getApplicationContext(), GCMGateWay.class);
         intent.setAction(CommonConstants.ACTION_PING);
         startService(intent);
         // [START_EXCLUDE]
@@ -79,8 +79,8 @@ public class MyGcmListenerService extends GcmListenerService {
          * In some cases it may be useful to show a notification indicating to the user
          * that a message was received.
          */
-        if(ConnectDoorController.isAuthorized(message) && (timePassed < 20)){
-            ConnectDoorController.sendCmd(CommonConstants.CMD_PRESS_DOOR_BUTTON);
+        if(GCMGateWay.isAuthorized(message) && (timePassed < 20)){
+            GCMGateWay.sendCmd(CommonConstants.CMD_PRESS_DOOR_BUTTON);
             LogToFile.toFile(TAG, "sending open door cmd");
             LogToFile.toFile(TAG,timeForSending);
         }else{

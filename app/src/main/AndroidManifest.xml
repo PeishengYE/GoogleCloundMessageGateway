@@ -72,7 +72,7 @@
         </service>
 
         <service
-            android:name="com.radioyps.gcm_test.ConnectDoorController"
+            android:name=".GCMGateWay"
             android:exported="false">
         </service>
         <receiver android:name=".AlarmReceiver"/>

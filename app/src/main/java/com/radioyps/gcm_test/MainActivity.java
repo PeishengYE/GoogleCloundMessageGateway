@@ -105,10 +105,7 @@ public class MainActivity extends AppCompatActivity {
             startService(intent);
         }
         SetAlarm(this);
-        Log.i(TAG, "onCreate()>> ...start IntentService.");
-        Intent intent = new Intent(getApplicationContext(), ConnectDoorController.class);
-        intent.setAction(CommonConstants.ACTION_PING);
-        startService(intent);
+
 
     }
 
