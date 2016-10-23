@@ -20,8 +20,9 @@ android {
 
         buildTypes.each {
 
-                it.buildConfigField 'String', 'MySenderID', MySenderID
-            it.buildConfigField 'String', 'MyDoorConfirmKey', MyDoorConfirmKey
+            it.buildConfigField 'String', 'MySenderID', MySenderID
+            it.buildConfigField 'String', 'MyDoorConfirmKeyFromGCM', MyDoorConfirmKey
+            it.buildConfigField 'String', 'DoorOpenCmdUsedByLocalNetwork', DoorOpenCmdKeyUsedByLocalNetwork
             }
 }
 

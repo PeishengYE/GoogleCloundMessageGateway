@@ -2,7 +2,10 @@ package com.radioyps.gcm_test;
 
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.graphics.Bitmap;
+import android.preference.PreferenceManager;
+import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 
 import com.google.android.gms.common.ConnectionResult;
@@ -65,24 +68,29 @@ public class Utility {
         }
         return token;
     }
+    private void updateUIMessage(String msg, Context context){
 
-    public static  void displayTokernOnScreen(String token, Context context) {
-        // Add custom implementation, as needed.
-        Log.d(TAG, "displayTokernOnScreen()>> <" + token + ">");
-        MultiFormatWriter multiFormatWriter = new MultiFormatWriter();
-        try {
-            BitMatrix bitMatrix = multiFormatWriter.encode(token, BarcodeFormat.QR_CODE, 200, 200);
-            BarcodeEncoder barcodeEncoder = new BarcodeEncoder();
-            Bitmap bitmap = barcodeEncoder.createBitmap(bitMatrix);
-
-            Intent intent = new Intent(context, QrActivity.class);
-            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-            intent.putExtra("pic", bitmap);
-            context.startActivity(intent);
-        } catch (WriterException e) {
-            e.printStackTrace();
-        }
+        Intent localIntent = new Intent();
 
 
+        localIntent.setAction(CommonConstants.LOCAL_BROADCAST_ACTION);
+
+        localIntent.putExtra(CommonConstants.LOCAL_BROADCAST_UPDATE_MESSAGE, msg);
+        localIntent.addCategory(Intent.CATEGORY_DEFAULT);
+
+        LocalBroadcastManager.getInstance(context).sendBroadcast(localIntent);
+    }
+
+    public static String getPreferredIPAdd(Context context) {
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
+        return prefs.getString(context.getString(R.string.pref_client_ip_address_key),
+                context.getString(R.string.pref_client_default_ip_address));
+    }
+
+    public static int getPreferredIPPort(Context context) {
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
+        String port =  prefs.getString(context.getString(R.string.pref_client_ip_port_key),
+                context.getString(R.string.pref_client_default_ip_port));
+        return Integer.getInteger(port);
     }
 }

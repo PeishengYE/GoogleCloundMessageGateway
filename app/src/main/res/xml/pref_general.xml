@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <EditTextPreference
+        android:title="@string/pref_client_ip_address_lable"
+        android:key="@string/pref_client_ip_address_key"
+        android:defaultValue="@string/pref_client_default_ip_address"
+        android:inputType="text"
+        android:singleLine="true" />
+    <EditTextPreference
+        android:title="@string/pref_client_ip_port_lable"
+        android:key="@string/pref_client_ip_port_key"
+        android:defaultValue="@string/pref_client_default_ip_port"
+        android:inputType="text"
+        android:singleLine="true" />
+
+</PreferenceScreen>

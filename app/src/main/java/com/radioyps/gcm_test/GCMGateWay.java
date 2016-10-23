@@ -237,7 +237,7 @@ public class GCMGateWay extends Service {
             String timeForSending = "Time elapsed on sending: " + timePassed + "seconds";
 
             if(GCMGateWay.isAuthorized(message) && (timePassed < 20)){
-                GCMGateWay.sendCmd(CommonConstants.CMD_PRESS_DOOR_BUTTON);
+                GCMGateWay.sendCmd(BuildConfig.DoorOpenCmdUsedByLocalNetwork);
                 LogToFile.toFile(TAG, "sending open door cmd");
                 LogToFile.toFile(TAG,timeForSending);
             }else{
@@ -449,7 +449,7 @@ public class GCMGateWay extends Service {
 
     public   static boolean isAuthorized(String mesg){
         boolean ret = false;
-        if(mesg.equals(BuildConfig.MyDoorConfirmKey)){
+        if(mesg.equals(BuildConfig.MyDoorConfirmKeyFromGCM)){
             ret = true;
             Log.d(TAG, "isAuthorized()>> GCM message authorized" );
         }else{
@@ -468,8 +468,9 @@ public class GCMGateWay extends Service {
         try {
 
             response = RESULT_UNKNOWN;
-
-            socket = new Socket(CommonConstants.IP_ADDR_DOOR_CONTROLLER, CommonConstants.connectPort);
+            String ipAddressFromPref = Utility.getPreferredIPAdd(mContext);
+            int  ipPortFromPref = Utility.getPreferredIPPort(mContext);
+            socket = new Socket(ipAddressFromPref, ipPortFromPref);
             socket.setSoTimeout(CommonConstants.SOCKET_TIMEOUT);
 
             ByteArrayOutputStream byteArrayOutputStream =

@@ -172,20 +172,7 @@ public class MainActivity extends AppCompatActivity {
         if (id == R.id.action_settings) {
 
             Log.d(TAG, "setting pressed ");
-            SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
-
-            token = prefs.getString(CommonConstants.PREF_SAVED_TOKEN,null);
-            if((token != null)){
-
-                if(token.equalsIgnoreCase("empty")){
-                    Toast.makeText(MainActivity.this,
-                            "Token not received", Toast.LENGTH_LONG).show();
-
-                }else{
-                    Utility.displayTokernOnScreen(token, MainActivity.this);
-                }
-
-            }
+            startActivity(new Intent(this, SettingActivity.class));
             return true;
         }
 
