@@ -9,7 +9,7 @@ import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.graphics.Bitmap;
+
 import android.media.RingtoneManager;
 import android.net.Uri;
 import android.os.Bundle;
@@ -24,15 +24,7 @@ import android.support.annotation.Nullable;
 import android.support.v4.app.NotificationCompat;
 import android.util.Log;
 
-import com.google.android.gms.common.ConnectionResult;
-import com.google.android.gms.common.GoogleApiAvailability;
-import com.google.android.gms.gcm.GoogleCloudMessaging;
-import com.google.android.gms.iid.InstanceID;
-import com.google.zxing.BarcodeFormat;
-import com.google.zxing.MultiFormatWriter;
-import com.google.zxing.WriterException;
-import com.google.zxing.common.BitMatrix;
-import com.journeyapps.barcodescanner.BarcodeEncoder;
+
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -47,6 +39,9 @@ import java.net.UnknownHostException;
 
 /**
  * Created by yep on 10/10/16.
+ * To test your GCM, you can use the following link to do the magic
+ *
+ * http://udacity.github.io/Advanced_Android_Development/
  */
 public class GCMGateWay extends Service {
 
