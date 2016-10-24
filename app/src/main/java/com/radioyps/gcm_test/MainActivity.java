@@ -90,7 +90,7 @@ public class MainActivity extends AppCompatActivity {
         registerReceiver();
 
         if (checkPlayServices()) {
-
+            GCMGateWay.start("MainActivity start", this);
         }
 
 

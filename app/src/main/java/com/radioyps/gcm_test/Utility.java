@@ -68,7 +68,7 @@ public class Utility {
         }
         return token;
     }
-    private void updateUIMessage(String msg, Context context){
+    public static void updateUIMessage(String msg, Context context){
 
         Intent localIntent = new Intent();
 
@@ -92,5 +92,12 @@ public class Utility {
         String port =  prefs.getString(context.getString(R.string.pref_client_ip_port_key),
                 context.getString(R.string.pref_client_default_ip_port));
         return Integer.getInteger(port);
+    }
+
+    public static boolean isTokenRecevied(Context context){
+        boolean ret = false;
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
+        ret = prefs.getBoolean(CommonConstants.PREF_IS_TOKEN_RECEVIED, false);
+        return ret;
     }
 }

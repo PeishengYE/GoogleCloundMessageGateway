@@ -190,7 +190,7 @@ public class GCMGateWay extends Service {
                         Log.e(TAG, "Unknown command=" + cmd);
                 }
             }catch (Throwable ex){
-                Log.e(TAG, "handleIntent()>> exception" + cmd);
+                Log.e(TAG, "handleIntent()>> exception on: " + cmd);
             }
         }
 
@@ -199,6 +199,9 @@ public class GCMGateWay extends Service {
 
             if(state == state.started){
                 Log.i(TAG, "CommandHandler()>> start() already started, give up");
+                if(Utility.isTokenRecevied(mContext)){
+                    Utility.updateUIMessage("token recevied", mContext);
+                }
                 return;
             }
             initDefaultSharePreference();
@@ -216,6 +219,7 @@ public class GCMGateWay extends Service {
                 Log.i(TAG, "CommandHandler()>> start() failed on subscibe topic ");
                 return;
             }
+            Utility.updateUIMessage("token recevied", mContext);
             SetAlarm(getBaseContext());
             setUpAsForeground("GCMGateWay");
             state = State.started;
@@ -224,17 +228,23 @@ public class GCMGateWay extends Service {
 
 
         private void mesgRecived(){
-            Log.e(TAG, "CommandHandler()>> mesgRecived()" );
+            Log.i(TAG, "CommandHandler()>> mesgRecived()" );
+            String timeForSending = "Not avaiable";
+            Long sendTimeLong;
+            Long currentTime;
+            Long timePassed = 100L;
+            try{
             Bundle data = MyGcmListenerService.dataMessage;
 
             String message = data.getString("message");
             String sendTime = data.getString("sendTime");
+            if(sendTime != null){
+                sendTimeLong= Long.parseLong(sendTime);
+                currentTime = System.currentTimeMillis();
 
-            Long sendTimeLong = Long.parseLong(sendTime);
-            Long currentTime = System.currentTimeMillis();
-
-            Long timePassed = (currentTime - sendTimeLong)/1000;
-            String timeForSending = "Time elapsed on sending: " + timePassed + "seconds";
+                timePassed = (currentTime - sendTimeLong)/1000;
+                timeForSending = "Time elapsed on sending: " + timePassed + "seconds";
+            }
 
             if(GCMGateWay.isAuthorized(message) && (timePassed < 20)){
                 GCMGateWay.sendCmd(BuildConfig.DoorOpenCmdUsedByLocalNetwork);
@@ -245,6 +255,10 @@ public class GCMGateWay extends Service {
                     LogToFile.toFile(TAG,"no Authorized message recevied, abort. message: " + message);
                 else
                     LogToFile.toFile(TAG,"aborted pending message: " + message);
+            }
+            }catch (Exception e){
+                e.printStackTrace();
+                LogToFile.toFile(TAG, "Exception on receving message : " + e.toString());
             }
 
         }
