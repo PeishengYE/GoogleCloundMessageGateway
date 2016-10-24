@@ -126,6 +126,7 @@ public class GCMGateWay extends Service {
 
         commandLooper.quit();
         CancelAlarm(mContext);
+        state = State.stop;
         super.onDestroy();
     }
 
@@ -263,6 +264,7 @@ public class GCMGateWay extends Service {
             sendNotification("Emergency: token changed");
             /* FIXME need ask user to rescan the QR code on Screen  */
             String token = Utility.startRegistration(getBaseContext());
+            LogToFile.toFile(TAG, "gcmTokenChanged()>> Attention Token changed ");
             if(token == null){
                 return;
             }
