@@ -83,15 +83,29 @@ public class Utility {
 
     public static String getPreferredIPAdd(Context context) {
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
-        return prefs.getString(context.getString(R.string.pref_client_ip_address_key),
+        String ipAdd = prefs.getString(context.getString(R.string.pref_client_ip_address_key),
                 context.getString(R.string.pref_client_default_ip_address));
+        if((ipAdd == null)||(ipAdd.trim().length() == 0)){
+            ipAdd =context.getString(R.string.pref_client_default_ip_address);
+        }
+        return  ipAdd;
     }
 
     public static int getPreferredIPPort(Context context) {
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
         String port =  prefs.getString(context.getString(R.string.pref_client_ip_port_key),
                 context.getString(R.string.pref_client_default_ip_port));
-        return Integer.getInteger(port);
+        if((port == null)||(port.trim().length() == 0)){
+            port =context.getString(R.string.pref_client_default_ip_port);
+        }
+        if(port == null){
+            Log.d(TAG, "null pointer ");
+            return 0;
+        }else {
+            Log.d(TAG, "good pointer ");
+            return Integer.valueOf(port);
+        }
+
     }
 
     public static boolean isTokenRecevied(Context context){
