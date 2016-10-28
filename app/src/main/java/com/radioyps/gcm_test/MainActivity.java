@@ -32,7 +32,6 @@ package com.radioyps.gcm_test;
         import android.view.MenuItem;
         import android.widget.ImageView;
         import android.widget.TextView;
-        import android.widget.Toast;
 
         import com.google.android.gms.common.ConnectionResult;
         import com.google.android.gms.common.GoogleApiAvailability;
@@ -71,10 +70,10 @@ public class MainActivity extends AppCompatActivity {
                 SharedPreferences sharedPreferences =
                         PreferenceManager.getDefaultSharedPreferences(context);
                 boolean sentToken = sharedPreferences
-                        .getBoolean(CommonConstants.PREF_IS_TOKEN_RECEVIED, false);
+                        .getBoolean(CommonConstants.PREF_IS_LOCAL_TOKEN_RECEVIED, false);
                 if (sentToken) {
                     mStatusTextView.setText(getString(R.string.gcm_send_message));
-                    String token = sharedPreferences.getString(CommonConstants.PREF_SAVED_TOKEN,null);
+                    String token = sharedPreferences.getString(CommonConstants.PREF_LOCAL_TOKEN_SAVING_KEY,null);
                     if(token != null)
                          makeQRCode(token);
 

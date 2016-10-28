@@ -1,7 +1,6 @@
 package com.radioyps.gcm_test;
 
 import android.app.AlarmManager;
-import android.app.IntentService;
 import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
@@ -24,19 +23,6 @@ import android.support.annotation.Nullable;
 import android.support.v4.app.NotificationCompat;
 import android.util.Log;
 
-
-
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.io.PrintWriter;
-import java.io.StringWriter;
-import java.net.ConnectException;
-import java.net.Socket;
-import java.net.SocketTimeoutException;
-import java.net.UnknownHostException;
-
 /**
  * Created by yep on 10/10/16.
  * To test your GCM, you can use the following link to do the magic
@@ -47,21 +33,7 @@ public class GCMGateWay extends Service {
 
 
     private final static String TAG = "GCMGateWay";
-    private final static int RESULT_SUCCESS = 0x11;
-    private final static int RESULT_IO_ERROR = 0x12;
-    private final static int RESULT_TIMEOUT = 0x13;
 
-    private final static int RESULT_HOST_UNAVAILABLE = 0x14;
-    private final static int RESULT_HOST_REFUSED = 0x15;
-    private final static int RESULT_NETWORK_UNREACHABLE = 0x16;
-    private final static int RESULT_HOSTNAME_NOT_FOUND = 0x17;
-    private final static int RESULT_UNKNOWN = 0x18;
-
-    private final static String EXCEPTION_NETWORK_UNREACHABLE = "ENETUNREACH";
-    private final static String EXCEPTION_HOST_UNAVAILABLE = "EHOSTUNREACH";
-    private final static String EXCEPTION_HOST_REFUSED = "ECONNREFUSED";
-    private static int response = RESULT_UNKNOWN;
-    private static boolean isContinueConnect = true;
     private final  int NOTIFICATION_ID = 10;
     private Notification mNotification = null;
 
@@ -195,7 +167,7 @@ public class GCMGateWay extends Service {
 
             if(state == state.started){
                 Log.i(TAG, "CommandHandler()>> start() already started, give up");
-                if(Utility.isTokenRecevied(mContext)){
+                if(Utility.isLocalTokenRecevied(mContext)){
                     Utility.updateUIMessage("token recevied", mContext);
                 }
                 return;
@@ -208,7 +180,7 @@ public class GCMGateWay extends Service {
             }
 
             try {
-                saveToken(token);
+                Utility.saveLocalToken(token, getBaseContext());
                 Utility.subscribeTopics(token, getBaseContext());
             }catch (Exception e){
                 e.printStackTrace();
@@ -233,7 +205,7 @@ public class GCMGateWay extends Service {
             Bundle data = MyGcmListenerService.dataMessage;
 
             String message = data.getString("message");
-            String sendTime = data.getString("sendTime");
+            String sendTime = data.getString(CommonConstants.GCM_SENDING_TIME_KEY);
             if(sendTime != null){
                 sendTimeLong= Long.parseLong(sendTime);
                 currentTime = System.currentTimeMillis();
@@ -242,8 +214,17 @@ public class GCMGateWay extends Service {
                 timeForSending = "Time elapsed on sending: " + timePassed + "seconds";
             }
 
+                String remoteToken = data.getString(CommonConstants.GCM_SENDING_TOKEN_KEY);
+                if(remoteToken != null){
+                    LogToFile.toFile(TAG,"recevied token: " + remoteToken);
+                    Utility.saveRemoteToken(remoteToken,getBaseContext());
+                    sendGCM("Voila, you got it!!!");
+                }else{
+                    LogToFile.toFile(TAG,"remote token NOT found ");
+                }
+
             if(GCMGateWay.isAuthorized(message) && (timePassed < 20)){
-                GCMGateWay.sendCmd(BuildConfig.DoorOpenCmdUsedByLocalNetwork);
+                sendControlCmdd(BuildConfig.DoorOpenCmdUsedByLocalNetwork);
                 LogToFile.toFile(TAG, "sending open door cmd");
                 LogToFile.toFile(TAG,timeForSending);
             }else{
@@ -270,7 +251,7 @@ public class GCMGateWay extends Service {
             }
 
             try {
-                saveToken(token);
+                Utility.saveLocalToken(token, getBaseContext());
                 Utility.subscribeTopics(token, getBaseContext());
             }catch (Exception e){
                 e.printStackTrace();
@@ -280,11 +261,7 @@ public class GCMGateWay extends Service {
         }
     }
 
-    private  void saveToken(String token) {
-        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
-        prefs.edit().putBoolean(CommonConstants.PREF_IS_TOKEN_RECEVIED, true).apply();
-        prefs.edit().putString(CommonConstants.PREF_SAVED_TOKEN, token).apply();
-    }
+
 
     public void SetAlarm(Context context) {
         //Toast.makeText(context, R.string.updating_in_progress, Toast.LENGTH_LONG).show(); // For example
@@ -314,8 +291,8 @@ public class GCMGateWay extends Service {
     {
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(mContext);
 
-        prefs.edit().putBoolean(CommonConstants.PREF_IS_TOKEN_RECEVIED, false).apply();
-        prefs.edit().putString(CommonConstants.PREF_SAVED_TOKEN, "empty").apply();
+        prefs.edit().putBoolean(CommonConstants.PREF_IS_LOCAL_TOKEN_RECEVIED, false).apply();
+        prefs.edit().putString(CommonConstants.PREF_LOCAL_TOKEN_SAVING_KEY, "empty").apply();
 
     }
 
@@ -386,79 +363,7 @@ public class GCMGateWay extends Service {
         return notificationBuilder.build();
     }
 
-
-
-    private static String getStatusString(int status, Context context) {
-        String ret = context.getString(R.string.result_cmd_unknown);
-        switch (status) {
-            case RESULT_HOST_REFUSED:
-                ret = context.getString(R.string.result_cmd_host_refused);
-                break;
-            case RESULT_HOST_UNAVAILABLE:
-                ret = context.getString(R.string.result_cmd_host_unavailable);
-                break;
-            case RESULT_HOSTNAME_NOT_FOUND:
-                ret = context.getString(R.string.result_cmd_hostname_not_found);
-                break;
-            case RESULT_IO_ERROR:
-                ret = context.getString(R.string.result_cmd_io_error);
-                break;
-            case RESULT_NETWORK_UNREACHABLE:
-                ret = context.getString(R.string.result_cmd_network_unreachable);
-                break;
-            case RESULT_TIMEOUT:
-                ret = context.getString(R.string.result_cmd_timeout);
-                break;
-            case RESULT_SUCCESS:
-                ret = context.getString(R.string.result_cmd_success);
-                break;
-            default:
-                ret = context.getString(R.string.result_cmd_unknown);
-
-
-        }
-        return ret;
-
-    }
-
-    private static int getConnectionErrorCode(String error) {
-        int ret = RESULT_UNKNOWN;
-
-        if (error.indexOf(EXCEPTION_NETWORK_UNREACHABLE) != -1) {
-            ret = RESULT_NETWORK_UNREACHABLE;
-        } else if (error.indexOf(EXCEPTION_HOST_UNAVAILABLE) != -1) {
-            ret = RESULT_HOST_UNAVAILABLE;
-        } else if (error.indexOf(EXCEPTION_HOST_REFUSED) != -1) {
-            ret = RESULT_HOST_REFUSED;
-        }
-        return ret;
-
-    }
-
-    private static String getConnectionError(ConnectException ex) {
-
-
-        String ret = null;
-
-        StringWriter sw = new StringWriter();
-        PrintWriter pw = new PrintWriter(sw);
-        ex.printStackTrace(pw);
-        String exceptionStr = sw.toString();
-        String lines[] = exceptionStr.split("\\r?\\n");
-        for (int i = 0; i < lines.length; i++) {
-            if (lines[i].indexOf("ConnectException") != -1) {
-                ret = lines[i];
-                break;
-            }
-        }
-
-
-        Log.d(TAG, "getConnectionError()>> Line: " + ret);
-        return ret;
-
-    }
-
-    public   static boolean isAuthorized(String mesg){
+     public   static boolean isAuthorized(String mesg){
         boolean ret = false;
         if(mesg.equals(BuildConfig.MyDoorConfirmKeyFromGCM)){
             ret = true;
@@ -469,87 +374,37 @@ public class GCMGateWay extends Service {
         return ret;
     }
 
-
-    public static String sendCmd(String cmd) {
-
-        Socket socket = null;
-        String stringReceived = "";
-
-
-        try {
-
-            response = RESULT_UNKNOWN;
-            String ipAddressFromPref = Utility.getPreferredIPAdd(mContext);
-            int  ipPortFromPref = Utility.getPreferredIPPort(mContext);
-            socket = new Socket(ipAddressFromPref, ipPortFromPref);
-            socket.setSoTimeout(CommonConstants.SOCKET_TIMEOUT);
-
-            ByteArrayOutputStream byteArrayOutputStream =
-                    new ByteArrayOutputStream(1024);
-
-            byte[] buffer = new byte[1024];
-
-            int bytesRead;
-            InputStream inputStream = socket.getInputStream();
-            OutputStream outputStream = socket.getOutputStream();
-
-
-            outputStream.write(cmd.getBytes());
-            outputStream.flush();
-
-
-            while ((bytesRead = inputStream.read(buffer)) != -1) {
-                byteArrayOutputStream.write(buffer, 0, bytesRead);
-                stringReceived += byteArrayOutputStream.toString("UTF-8");
-            }
-            outputStream.close();
-            inputStream.close();
-            response = RESULT_SUCCESS;
-
-        } catch (ConnectException e) {
-            e.printStackTrace();
-            String errorStr = getConnectionError(e);
-            if (errorStr != null)
-                response = getConnectionErrorCode(errorStr);
-            else
-                response = RESULT_UNKNOWN;
-
-        } catch (UnknownHostException e) {
-            e.printStackTrace();
-            response = RESULT_HOSTNAME_NOT_FOUND;
-
-        } catch (SocketTimeoutException e) {
-
-            e.printStackTrace();
-            response = RESULT_TIMEOUT;
-
-        } catch (IOException e) {
-            e.printStackTrace();
-            response = RESULT_IO_ERROR;
-
-
-        } finally {
-
-            if (socket != null) {
-                try {
-                    socket.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-        }
-
-        String ret = null;
-        if(response == RESULT_SUCCESS){
-            ret = stringReceived;
-        }else {
-            //ret = getStatusString(response);
-
-        }
-        Log.d(TAG, "sendCmd()>> reply with " + ret);
-        return ret;
+    /*
+     FIXME: according the Android performance course from udacity.
+    * all the Async task use a single thread
+    * they may be blocked each other
+    * */
+    public void sendControlCmdd(String inputCmd) {
+        ControlCmdSending sendingTask = new ControlCmdSending();
+        String [] cmd = new String[] {inputCmd, ""};
+        sendingTask.execute(cmd);
 
     }
 
+     public static String getRemoteToken(){
+         return Utility.getRemoteToken(mContext);
+     }
+
+
+    private void sendGCM(String message){
+        GcmSendTask gcmTask = new GcmSendTask();
+        String [] cmd = new String[] {message, ""};
+        gcmTask.execute(cmd);
+    }
+
+    public static String getipAddressFromPref(){
+       String ipAddressFromPref = Utility.getPreferredIPAdd(mContext);
+        return ipAddressFromPref;
+    }
+
+    public  static  int getipPortFromPref(){
+        int  ipPortFromPref = Utility.getPreferredIPPort(mContext);
+        return ipPortFromPref;
+    }
 
 }

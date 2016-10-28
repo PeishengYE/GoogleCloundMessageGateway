@@ -23,7 +23,9 @@ android {
             it.buildConfigField 'String', 'MySenderID', MySenderID
             it.buildConfigField 'String', 'MyDoorConfirmKeyFromGCM', MyDoorConfirmKey
             it.buildConfigField 'String', 'DoorOpenCmdUsedByLocalNetwork', DoorOpenCmdKeyUsedByLocalNetwork
-            }
+            it.buildConfigField 'String', 'GCMAPIKEY', MyGCMAPIKey
+
+        }
 }
 
 dependencies {

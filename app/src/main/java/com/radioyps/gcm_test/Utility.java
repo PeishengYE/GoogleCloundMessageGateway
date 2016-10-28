@@ -3,7 +3,6 @@ package com.radioyps.gcm_test;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.graphics.Bitmap;
 import android.preference.PreferenceManager;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
@@ -13,11 +12,6 @@ import com.google.android.gms.common.GoogleApiAvailability;
 import com.google.android.gms.gcm.GcmPubSub;
 import com.google.android.gms.gcm.GoogleCloudMessaging;
 import com.google.android.gms.iid.InstanceID;
-import com.google.zxing.BarcodeFormat;
-import com.google.zxing.MultiFormatWriter;
-import com.google.zxing.WriterException;
-import com.google.zxing.common.BitMatrix;
-import com.journeyapps.barcodescanner.BarcodeEncoder;
 
 import java.io.IOException;
 
@@ -99,19 +93,40 @@ public class Utility {
             port =context.getString(R.string.pref_client_default_ip_port);
         }
         if(port == null){
-            Log.d(TAG, "null pointer ");
+//            Log.d(TAG, "null pointer ");
             return 0;
         }else {
-            Log.d(TAG, "good pointer ");
+//            Log.d(TAG, "");
             return Integer.valueOf(port);
         }
 
     }
 
-    public static boolean isTokenRecevied(Context context){
+    public static boolean isLocalTokenRecevied(Context context){
         boolean ret = false;
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
-        ret = prefs.getBoolean(CommonConstants.PREF_IS_TOKEN_RECEVIED, false);
+        ret = prefs.getBoolean(CommonConstants.PREF_IS_LOCAL_TOKEN_RECEVIED, false);
         return ret;
     }
+
+    public static  void saveLocalToken(String token, Context context) {
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
+        prefs.edit().putBoolean(CommonConstants.PREF_IS_LOCAL_TOKEN_RECEVIED, true).apply();
+        prefs.edit().putString(CommonConstants.PREF_LOCAL_TOKEN_SAVING_KEY, token).apply();
+    }
+
+    public static  void saveRemoteToken(String token, Context context) {
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
+        prefs.edit().putBoolean(CommonConstants.PREF_IS_REMOTE_TOKEN_RECEVIED, true).apply();
+        prefs.edit().putString(CommonConstants.PREF_REMOTE_TOKEN_SAVING_KEY, token).apply();
+    }
+
+    public static String getRemoteToken(Context context) {
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
+        String token =  prefs.getString(CommonConstants.PREF_REMOTE_TOKEN_SAVING_KEY,
+                CommonConstants.PREF_REMOTE_TOKEN_EMPTY);
+        return token;
+    }
+
+
 }
