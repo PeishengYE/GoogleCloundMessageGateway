@@ -12,6 +12,7 @@ import android.content.SharedPreferences;
 import android.media.RingtoneManager;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.IBinder;
@@ -22,6 +23,16 @@ import android.preference.PreferenceManager;
 import android.support.annotation.Nullable;
 import android.support.v4.app.NotificationCompat;
 import android.util.Log;
+
+import java.io.BufferedInputStream;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.util.Arrays;
 
 /**
  * Created by yep on 10/10/16.
@@ -51,6 +62,12 @@ public class GCMGateWay extends Service {
 
     private static long TIME_INTERVAL = 15*1000;
     private static long TIME_DELAY = 3*1000;
+    ServerSocket serverSocket=null;
+    private  static  boolean isServerStarted = false;
+    Socket mSocket = null;
+    static final int socketServerPORT = 8099;
+    private  byte [] imageRecevied = null;
+
     @Nullable
     @Override
     public IBinder onBind(Intent intent) {
@@ -173,6 +190,7 @@ public class GCMGateWay extends Service {
                 return;
             }
             initDefaultSharePreference();
+            startScocketListener();
             /* */
             String token = Utility.startRegistration(getBaseContext());
             if(token == null){
@@ -261,7 +279,125 @@ public class GCMGateWay extends Service {
         }
     }
 
+	private void startScocketListener(){
+        if(!isServerStarted) {
 
+            Thread initThread = new Thread(new initSocketConnection());
+            initThread.start();
+        }
+    }
+
+
+   private class initSocketConnection extends Thread {
+
+
+            public void run() {
+                try {
+                    isServerStarted = true;
+                    serverSocket = new ServerSocket(socketServerPORT);
+                    Log.d(TAG, "initSocketConnection()>> Socket Started");
+                    while (true) {
+
+                        mSocket = serverSocket.accept();
+                        Thread socketServerThread = new Thread(new SocketServerThread());
+                        socketServerThread.start();
+                    }
+
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+                isServerStarted = false;
+            }
+    }
+
+
+    public static void writeToBinFile( String fileName, byte[] bytesInput) {
+        try {
+
+            File fileOutPut = new File(Environment.getExternalStorageDirectory(), fileName);
+
+            OutputStream osFile = new FileOutputStream(fileOutPut); // the true will append the new data
+            osFile.write(bytesInput);
+
+            osFile.close();
+        } catch (Exception ioe) {
+
+            Log.e(TAG,ioe.getMessage());
+        }
+    }
+
+        public class SocketServerThread extends Thread {
+            InputStream isSocket =null;
+            Socket workingSocket = mSocket;
+
+            @Override
+            public void run() {
+                String connectionInfo = "";
+                connectionInfo +=  " from "
+                        + workingSocket.getInetAddress() + ":"
+                        + workingSocket.getPort() + "\n";
+                Log.i(TAG, "SocketServerThread()>>  current: " + connectionInfo);
+
+                try {
+                    File fileOutPut = new File(Environment.getExternalStorageDirectory(), CommonConstants.TEMP_IMAG_FILENAME);
+                    OutputStream osFile = new FileOutputStream(fileOutPut);
+
+                    isSocket = workingSocket.getInputStream();
+                    clearImageRecived();
+                    byte[] buffer = new byte[CommonConstants.TMP_MAXIMUM_OUTPUT_LENGTH];
+                    int count;
+                        try{
+                            while ((count = isSocket.read(buffer)) > 0) {
+                                osFile.write(buffer,0,count);
+                                appendImageReceived(Arrays.copyOf(buffer,count));
+                                Log.i(TAG, "SocketServerThread()>>  count: " + count);
+                            }
+                        }catch (Exception e){
+                            e.printStackTrace();
+                        }
+                     osFile.close();
+                     isSocket.close();
+                     Log.i(TAG, "imageRecevied: byte length: " + imageRecevied.length);
+                } catch (IOException e) {
+                    // TODO Auto-generated catch block
+                    e.printStackTrace();
+                } finally {
+                    closeSocket(workingSocket);
+
+                }
+            }
+
+        }
+
+    private void closeSocket(Socket socketInput){
+        if (socketInput != null) {
+            try {
+                socketInput.close();
+            } catch (IOException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
+        }
+    }
+
+   private  void clearImageRecived(){
+       imageRecevied = null;
+   }
+
+    private  void appendImageReceived(byte[] data){
+        if(imageRecevied == null){
+            imageRecevied = data;
+        }else {
+            imageRecevied = concatenateByteArrays(imageRecevied, data);
+        }
+    }
+
+    private  byte[] concatenateByteArrays(byte[] a, byte[] b) {
+        byte[] result = new byte[a.length + b.length];
+        System.arraycopy(a, 0, result, 0, a.length);
+        System.arraycopy(b, 0, result, a.length, b.length);
+        return result;
+    }
 
     public void SetAlarm(Context context) {
         //Toast.makeText(context, R.string.updating_in_progress, Toast.LENGTH_LONG).show(); // For example
@@ -393,7 +529,7 @@ public class GCMGateWay extends Service {
 
     private void sendGCM(String message){
         GcmSendTask gcmTask = new GcmSendTask();
-        String [] cmd = new String[] {message, ""};
+        String [] cmd = new String[] {"message", message, ""};
         gcmTask.execute(cmd);
     }
 
