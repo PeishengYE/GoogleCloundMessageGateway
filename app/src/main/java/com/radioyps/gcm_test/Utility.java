@@ -3,6 +3,7 @@ package com.radioyps.gcm_test;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.os.Environment;
 import android.preference.PreferenceManager;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
@@ -13,7 +14,13 @@ import com.google.android.gms.gcm.GcmPubSub;
 import com.google.android.gms.gcm.GoogleCloudMessaging;
 import com.google.android.gms.iid.InstanceID;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.FileWriter;
 import java.io.IOException;
+import java.io.OutputStream;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
 /**
  * Created by yep on 23/10/16.
@@ -97,7 +104,7 @@ public class Utility {
             return 0;
         }else {
 //            Log.d(TAG, "");
-            return Integer.valueOf(port);
+            return Integer.parseInt(port);
         }
 
     }
@@ -127,6 +134,7 @@ public class Utility {
                 CommonConstants.PREF_REMOTE_TOKEN_EMPTY);
         return token;
     }
+
 
 
 }
