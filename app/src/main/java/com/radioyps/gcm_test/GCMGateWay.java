@@ -394,6 +394,7 @@ public class GCMGateWay extends Service {
                     while (true) {
 
                         mSocket = serverSocket.accept();
+                        Log.d(TAG, "initSocketConnection()>> connected, making new thread");
                         Thread socketServerThread = new Thread(new SocketServerThread());
                         socketServerThread.start();
                     }
@@ -445,7 +446,7 @@ public class GCMGateWay extends Service {
                     e.printStackTrace();
                 } finally {
                     closeSocket(workingSocket);
-
+                    Log.i(TAG, "SocketServerThread()>>  thread finished ");
                 }
             }
 
