@@ -31,17 +31,21 @@ public class GcmSendTask extends AsyncTask<String, Void, String> {
         final String API_KEY = BuildConfig.GCMAPIKEY;
             /* FIXME this may be a very bad idea to coding like this */
         String Remote_GCM_TOKEN = GCMGateWay.getRemoteToken();
+//        final String postData = "{ \"registration_ids\": [ \"" + Remote_GCM_TOKEN + "\" ], " +
+//                // "\"delay_while_idle\": true, " +
+//                "\"data\": {\"tickerText\":\"My Ticket\", " +
+//                "\"contentTitle\":\"My Title\", " +
+//                "\"message\": \"";
         final String postData = "{ \"registration_ids\": [ \"" + Remote_GCM_TOKEN + "\" ], " +
-                // "\"delay_while_idle\": true, " +
-                "\"data\": {\"tickerText\":\"My Ticket\", " +
-                "\"contentTitle\":\"My Title\", " +
-                "\"message\": \"";
+                                "\"data\": {\"";
         final String endData = "\"}}";
         StringBuilder toSend = new StringBuilder();
         long currentTime = System.currentTimeMillis();
 
         toSend.append(postData);
         toSend.append(params[0]);
+        toSend.append("\": \"");
+        toSend.append(params[1]);
         toSend.append("\", \"");
         toSend.append(CommonConstants.GCM_SENDING_TIME_KEY);
         toSend.append("\": \"");
@@ -99,6 +103,7 @@ public class GcmSendTask extends AsyncTask<String, Void, String> {
         try {
             JSONObject jsonObject = new JSONObject(message);
 //            MainActivity.sendMessage(CommonConstants.MSG_GCM_CMD_STATUS, CommonConstants.FLAG_GCM_OK);
+            GCMGateWay.onGCMSendingFinished();
         } catch (JSONException e) {
             e.printStackTrace();
 //            MainActivity.sendMessage(CommonConstants.MSG_GCM_CMD_STATUS, CommonConstants.FLAG_GCM_FAILURE);

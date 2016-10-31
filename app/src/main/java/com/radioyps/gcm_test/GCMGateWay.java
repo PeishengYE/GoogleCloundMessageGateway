@@ -22,9 +22,9 @@ import android.os.SystemClock;
 import android.preference.PreferenceManager;
 import android.support.annotation.Nullable;
 import android.support.v4.app.NotificationCompat;
+import android.util.Base64;
 import android.util.Log;
 
-import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -49,11 +49,16 @@ public class GCMGateWay extends Service {
     private Notification mNotification = null;
 
     private volatile CommandHandler commandHandler;
+    private static volatile GCMSendingHandler gcmSendingHandler;
     public static final String EXTRA_COMMAND = "Command";
     private static final String EXTRA_REASON = "Reason";
-    public enum Command {start, mesgArrived, tokenChanged, stop}
+    public enum Command {start, mesgArrived, tokenChanged, imageArrived,GCMSendingFinished,stop}
     private static final int MSG_SERVICE_INTENT = 0;
+    private static final int MSG_IMG_DATA_SENDING_START = 1;
+    private static final int MSG_GCM_SENDING_FINISHED = 2;
+
     private volatile Looper commandLooper;
+    private volatile Looper gcmSendingLooper;
     private boolean enabled = true;
 
     private State state = State.stop;
@@ -67,6 +72,7 @@ public class GCMGateWay extends Service {
     Socket mSocket = null;
     static final int socketServerPORT = 8099;
     private  byte [] imageRecevied = null;
+    String base64ImageData = null;
 
     @Nullable
     @Override
@@ -107,6 +113,12 @@ public class GCMGateWay extends Service {
         commandThread.start();
         commandLooper = commandThread.getLooper();
         commandHandler = new CommandHandler(commandLooper);
+
+
+        HandlerThread GCMSendingHandlerThread = new HandlerThread(getString(R.string.app_name) + " GCMsending");
+        GCMSendingHandlerThread.start();
+        gcmSendingLooper = GCMSendingHandlerThread.getLooper();
+        gcmSendingHandler = new GCMSendingHandler(gcmSendingLooper);
     }
 
     @Override
@@ -114,10 +126,79 @@ public class GCMGateWay extends Service {
         Log.i(TAG, "Destroy");
 
         commandLooper.quit();
+        gcmSendingLooper.quit();
         CancelAlarm(mContext);
         state = State.stop;
         super.onDestroy();
     }
+
+    private final class GCMSendingHandler extends Handler {
+
+        private  int currentBegin, currentEnd,totalLength;
+        private  int indexPacket;
+        private  boolean isAllSendOut = false;
+        private  boolean isNeedSendFinishFlag = false;
+
+        public GCMSendingHandler(Looper looper) {
+            super(looper);
+        }
+
+        @Override
+        public void handleMessage(Message msg) {
+            super.handleMessage(msg);
+            try {
+                switch (msg.what) {
+                    case MSG_IMG_DATA_SENDING_START:
+                        initSending();
+                        sendBase64Data();
+                        break;
+                    case MSG_GCM_SENDING_FINISHED:
+                        if(!isAllSendOut)
+                            sendBase64Data();
+                        else if(isNeedSendFinishFlag)
+                            sendEndPacketMesg();
+                        break;
+                    default:
+                        Log.e(TAG, "GCMSendingHandler()>> unknown cmd" + msg.what);
+                }
+            } catch (Throwable ex) {
+                Log.e(TAG, ex.toString() + "\n" + Log.getStackTraceString(ex));
+            } finally {
+
+            }
+        }
+
+        private void initSending(){
+            totalLength = base64ImageData.length();
+            currentBegin = 0;
+            indexPacket = 0;
+            isAllSendOut = false;
+
+        }
+
+        private void sendBase64Data(){
+            currentEnd = currentBegin + CommonConstants.GCM_MAX_DATA_LENGTH;
+            if(currentEnd > totalLength){
+                currentEnd = totalLength;
+                isAllSendOut = true;
+                isNeedSendFinishFlag = true;
+            }
+
+
+            String toSendData = base64ImageData.substring(currentBegin, currentEnd);
+            String flag = CommonConstants.GCM_SENDING_FLAG + indexPacket;
+            sendGCMMessageOnDataPayload(flag, toSendData);
+            currentBegin = currentEnd + 1;
+            indexPacket ++;
+        }
+        private  void sendEndPacketMesg(){
+            sendGCMMessageOnDataPayload(CommonConstants.GCM_SENDING_END_FLAG, CommonConstants.GCM_SENDING_END_MESG);
+            isNeedSendFinishFlag = false;
+        }
+    }
+
+
+
 
     private final class CommandHandler extends Handler {
         public int queue = 0;
@@ -171,6 +252,9 @@ public class GCMGateWay extends Service {
                     case tokenChanged:
                         gcmTokenChanged();
                         break;
+                    case imageArrived:
+                        sendImage();
+                        break;
                     default:
                         Log.e(TAG, "Unknown command=" + cmd);
                 }
@@ -211,7 +295,16 @@ public class GCMGateWay extends Service {
             state = State.started;
         }
 
+        private  void sendImage(){
+            Log.i(TAG, "CommandHandler()>> sendImage() prepare to send image" );
+            if(imageRecevied != null){
+                base64ImageData =  Base64.encodeToString(imageRecevied,Base64.DEFAULT);
+                Log.i(TAG, "base64 total length: " + base64ImageData.length());
+                onStartImageDataSending();
+            }
 
+
+        }
 
         private void mesgRecived(){
             Log.i(TAG, "CommandHandler()>> mesgRecived()" );
@@ -222,7 +315,7 @@ public class GCMGateWay extends Service {
             try{
             Bundle data = MyGcmListenerService.dataMessage;
 
-            String message = data.getString("message");
+
             String sendTime = data.getString(CommonConstants.GCM_SENDING_TIME_KEY);
             if(sendTime != null){
                 sendTimeLong= Long.parseLong(sendTime);
@@ -236,11 +329,12 @@ public class GCMGateWay extends Service {
                 if(remoteToken != null){
                     LogToFile.toFile(TAG,"recevied token: " + remoteToken);
                     Utility.saveRemoteToken(remoteToken,getBaseContext());
-                    sendGCM("Voila, you got it!!!");
+                    sendGCMMessageOnMessagePayload("Voila, you got it!!!");
                 }else{
                     LogToFile.toFile(TAG,"remote token NOT found ");
                 }
 
+                String message = data.getString("message");
             if(GCMGateWay.isAuthorized(message) && (timePassed < 20)){
                 sendControlCmdd(BuildConfig.DoorOpenCmdUsedByLocalNetwork);
                 LogToFile.toFile(TAG, "sending open door cmd");
@@ -271,7 +365,7 @@ public class GCMGateWay extends Service {
             try {
                 Utility.saveLocalToken(token, getBaseContext());
                 Utility.subscribeTopics(token, getBaseContext());
-            }catch (Exception e){
+            } catch (Exception e) {
                 e.printStackTrace();
                 Log.i(TAG, "CommandHandler()>> start() failed on subscibe topic ");
                 return;
@@ -311,20 +405,6 @@ public class GCMGateWay extends Service {
     }
 
 
-    public static void writeToBinFile( String fileName, byte[] bytesInput) {
-        try {
-
-            File fileOutPut = new File(Environment.getExternalStorageDirectory(), fileName);
-
-            OutputStream osFile = new FileOutputStream(fileOutPut); // the true will append the new data
-            osFile.write(bytesInput);
-
-            osFile.close();
-        } catch (Exception ioe) {
-
-            Log.e(TAG,ioe.getMessage());
-        }
-    }
 
         public class SocketServerThread extends Thread {
             InputStream isSocket =null;
@@ -349,7 +429,7 @@ public class GCMGateWay extends Service {
                         try{
                             while ((count = isSocket.read(buffer)) > 0) {
                                 osFile.write(buffer,0,count);
-                                appendImageReceived(Arrays.copyOf(buffer,count));
+                                appendImageReceived(Arrays.copyOf(buffer, count));
                                 Log.i(TAG, "SocketServerThread()>>  count: " + count);
                             }
                         }catch (Exception e){
@@ -358,6 +438,7 @@ public class GCMGateWay extends Service {
                      osFile.close();
                      isSocket.close();
                      Log.i(TAG, "imageRecevied: byte length: " + imageRecevied.length);
+                    onReceiveImage("Motion detected",mContext);
                 } catch (IOException e) {
                     // TODO Auto-generated catch block
                     e.printStackTrace();
@@ -440,11 +521,29 @@ public class GCMGateWay extends Service {
         context.startService(intent);
     }
 
+    public static void onReceiveImage(String reason, Context context) {
+        Intent intent = new Intent(context, GCMGateWay.class);
+        intent.putExtra(EXTRA_COMMAND, Command.imageArrived);
+        intent.putExtra(EXTRA_REASON, reason);
+        context.startService(intent);
+    }
     public static void onGoolgeTokenChanged(String reason, Context context) {
         Intent intent = new Intent(context, GCMGateWay.class);
         intent.putExtra(EXTRA_COMMAND, Command.tokenChanged);
         intent.putExtra(EXTRA_REASON, reason);
         context.startService(intent);
+    }
+
+    public static void onGCMSendingFinished() {
+        Message msg = gcmSendingHandler.obtainMessage();
+        msg.what = MSG_GCM_SENDING_FINISHED;
+        gcmSendingHandler.sendMessage(msg);
+    }
+
+    public static void onStartImageDataSending() {
+        Message msg = gcmSendingHandler.obtainMessage();
+        msg.what = MSG_IMG_DATA_SENDING_START;
+        gcmSendingHandler.sendMessage(msg);
     }
 
     void setUpAsForeground(String text) {
@@ -501,7 +600,8 @@ public class GCMGateWay extends Service {
 
      public   static boolean isAuthorized(String mesg){
         boolean ret = false;
-        if(mesg.equals(BuildConfig.MyDoorConfirmKeyFromGCM)){
+
+        if((mesg != null)&&(mesg.equals(BuildConfig.MyDoorConfirmKeyFromGCM))){
             ret = true;
             Log.d(TAG, "isAuthorized()>> GCM message authorized" );
         }else{
@@ -527,9 +627,15 @@ public class GCMGateWay extends Service {
      }
 
 
-    private void sendGCM(String message){
+    private void sendGCMMessageOnMessagePayload(String message){
         GcmSendTask gcmTask = new GcmSendTask();
         String [] cmd = new String[] {"message", message, ""};
+        gcmTask.execute(cmd);
+    }
+
+    private void sendGCMMessageOnDataPayload(String flag, String data){
+        GcmSendTask gcmTask = new GcmSendTask();
+        String [] cmd = new String[] {flag, data, ""};
         gcmTask.execute(cmd);
     }
 

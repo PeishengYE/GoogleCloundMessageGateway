@@ -28,5 +28,9 @@ public class CommonConstants {
     public static final String GCM_SENDING_TIME_KEY = "sendTime";
     public static final int TMP_MAXIMUM_OUTPUT_LENGTH = 2*1024;
     public static final String TEMP_IMAG_FILENAME = "GCM_image_from_local.jpg";
+    public static final int GCM_MAX_DATA_LENGTH = 2*1024;
+    public static final String GCM_SENDING_FLAG = "DATA_";
+    public static final String GCM_SENDING_END_FLAG = "DATA_888";
+    public static final String GCM_SENDING_END_MESG = "FINISHED";
 
 }
