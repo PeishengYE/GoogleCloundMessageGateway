@@ -169,6 +169,7 @@ public class GCMGateWay extends Service {
         }
 
         private void initSending(){
+//            base64ImageData = "1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890";
             totalLength = base64ImageData.length();
             currentBegin = 0;
             indexPacket = 0;
@@ -188,7 +189,7 @@ public class GCMGateWay extends Service {
             String toSendData = base64ImageData.substring(currentBegin, currentEnd);
             String flag = CommonConstants.GCM_SENDING_FLAG + indexPacket;
             sendGCMMessageOnDataPayload(flag, toSendData);
-            currentBegin = currentEnd + 1;
+            currentBegin = currentEnd;
             indexPacket ++;
         }
         private  void sendEndPacketMesg(){
