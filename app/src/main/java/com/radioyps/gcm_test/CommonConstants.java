@@ -33,5 +33,6 @@ public class CommonConstants {
     public static final String GCM_SENDING_FLAG = "DATA_";
     public static final String GCM_SENDING_END_FLAG = "DATA_888";
     public static final String GCM_SENDING_END_MESG = "FINISHED";
+    public static final String REMOTE_CONFIRM_MESG = "EXECUTION CONFIRMED";
 
 }

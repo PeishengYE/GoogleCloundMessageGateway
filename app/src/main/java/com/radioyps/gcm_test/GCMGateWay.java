@@ -136,7 +136,7 @@ public class GCMGateWay extends Service {
 
         private  int currentBegin, currentEnd,totalLength;
         private  int indexPacket;
-        private  boolean isAllSendOut = false;
+        private  boolean isAllSendOut = true;
         private  boolean isNeedSendFinishFlag = false;
 
         public GCMSendingHandler(Looper looper) {
@@ -330,7 +330,7 @@ public class GCMGateWay extends Service {
                 if(remoteToken != null){
                     LogToFile.toFile(TAG,"recevied token: " + remoteToken);
                     Utility.saveRemoteToken(remoteToken,getBaseContext());
-                    sendGCMMessageOnMessagePayload("Voila, you got it!!!");
+                    sendGCMMessageOnMessagePayload(CommonConstants.REMOTE_CONFIRM_MESG);
                 }else{
                     LogToFile.toFile(TAG,"remote token NOT found ");
                 }
